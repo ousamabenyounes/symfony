@@ -89,6 +89,18 @@ final class JavaScriptImportPathCompiler implements AssetCompilerInterface
             }
 
             if (!$dependentAsset) {
+                // CSS files cannot be loaded by the browser without an importmap entry
+                // (or the experimental import-attributes "with { type: 'css' }" syntax).
+                // Unlike JS bare names — which may resolve to a CDN URL at runtime — a missing
+                // CSS bare import will silently do nothing, so warn the user at compile time.
+                if (!$isRelativeImport
+                    && !$asset->isVendor
+                    && str_ends_with($importedModule, '.css')
+                    && !str_contains($importedModule, '://')
+                ) {
+                    $this->handleMissingImport(\sprintf('Unable to find asset "%s" imported from "%s". Add it to "importmap.php", e.g. via the "importmap:require" command.', $importedModule, $asset->sourcePath));
+                }
+
                 return $fullImportString;
             }
 

@@ -643,6 +643,30 @@ class JavaScriptImportPathCompilerTest extends TestCase
             'input' => "import 'https://example.com/other.js';",
             'expectedExceptionMessage' => null,
         ];
+
+        yield 'importing_a_bare_module_is_ignored_because_it_could_be_a_url' => [
+            'sourceLogicalName' => 'app.js',
+            'input' => "import 'lodash';",
+            'expectedExceptionMessage' => null,
+        ];
+
+        yield 'importing_a_missing_bare_css_file_throws_exception' => [
+            'sourceLogicalName' => 'app.js',
+            'input' => "import 'some-package/styles.css';",
+            'expectedExceptionMessage' => 'Unable to find asset "some-package/styles.css" imported from "/path/to/app.js". Add it to "importmap.php", e.g. via the "importmap:require" command.',
+        ];
+
+        yield 'dynamic_importing_a_missing_bare_css_file_throws_exception' => [
+            'sourceLogicalName' => 'app.js',
+            'input' => "await import('some-package/styles.css');",
+            'expectedExceptionMessage' => 'Unable to find asset "some-package/styles.css" imported from "/path/to/app.js". Add it to "importmap.php", e.g. via the "importmap:require" command.',
+        ];
+
+        yield 'importing_a_css_file_from_a_url_is_ignored' => [
+            'sourceLogicalName' => 'app.js',
+            'input' => "import 'https://example.com/styles.css';",
+            'expectedExceptionMessage' => null,
+        ];
     }
 
     public function testErrorMessageAvoidsCircularException()
