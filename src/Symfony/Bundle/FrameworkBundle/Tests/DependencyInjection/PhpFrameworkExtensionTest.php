@@ -14,6 +14,7 @@ namespace Symfony\Bundle\FrameworkBundle\Tests\DependencyInjection;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\IgnoreDeprecations;
+use Symfony\Bundle\FrameworkBundle\DependencyInjection\FrameworkExtension;
 use Symfony\Component\Cache\DependencyInjection\CachePoolPass;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\Config\FileLocator;
@@ -498,6 +499,34 @@ class PhpFrameworkExtensionTest extends FrameworkExtensionTestCase
                 ],
             ]);
         });
+    }
+
+    public function testCacheAppDsnSchemeIsCaseInsensitive()
+    {
+        $container = $this->createContainer();
+        $container->registerExtension(new FrameworkExtension());
+        $container->loadFromExtension('framework', [
+            'cache' => [
+                'app' => 'Redis://Example.COM:6380',
+            ],
+        ]);
+        $container->setParameter('cache.prefix.seed', 'test');
+        $container->getCompilerPassConfig()->setOptimizationPasses([]);
+        $container->getCompilerPassConfig()->setRemovingPasses([]);
+        $container->getCompilerPassConfig()->setAfterRemovingPasses([]);
+        $container->addCompilerPass(new CachePoolPass());
+        $container->compile();
+
+        $appPool = $container->getDefinition('cache.app');
+        $this->assertSame('cache.adapter.redis', $appPool->getParent());
+
+        $appProvider = $appPool->getArgument(0);
+        $this->assertInstanceOf(Reference::class, $appProvider);
+        $appProviderId = (string) $appProvider;
+        $this->assertStringStartsWith('.cache_connection.', $appProviderId);
+
+        // Only the scheme is lowercased — host case (case-sensitive in some uses) is preserved.
+        $this->assertSame('redis://Example.COM:6380', $container->getDefinition($appProviderId)->getArgument(0));
     }
 }
 

@@ -228,7 +228,7 @@ use Symfony\Contracts\Translation\LocaleAwareInterface;
  */
 class FrameworkExtension extends Extension
 {
-    private const CACHE_DSN_SCHEME_REGEX = '#^([a-z][a-z0-9+\-.]*+)://#';
+    private const CACHE_DSN_SCHEME_REGEX = '#^([a-z][a-z0-9+\-.]*+)://#i';
 
     private const CACHE_DSN_SCHEME_TO_ADAPTER = [
         'redis' => 'cache.adapter.redis',
@@ -2683,7 +2683,7 @@ class FrameworkExtension extends Extension
             ];
 
             if (preg_match(self::CACHE_DSN_SCHEME_REGEX, (string) $config[$name], $m)) {
-                $scheme = $m[1];
+                $scheme = strtolower($m[1]);
                 $adapter = self::CACHE_DSN_SCHEME_TO_ADAPTER[$scheme] ?? null;
 
                 if (null === $adapter) {
@@ -2691,7 +2691,9 @@ class FrameworkExtension extends Extension
                 }
 
                 $pool['adapters'] = [$adapter];
-                $pool['provider'] = $config[$name];
+                // Canonicalize the scheme to lowercase (RFC 3986); downstream consumers
+                // (CachePoolPass and AbstractAdapter::createConnection) match lowercase only.
+                $pool['provider'] = $scheme.substr((string) $config[$name], \strlen($m[1]));
             }
 
             $config['pools']['cache.'.$name] = $pool;
