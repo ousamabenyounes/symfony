@@ -1155,6 +1155,21 @@ class LocoProviderTest extends ProviderTestCase
         }
     }
 
+    public function testReadReturnsEmptyBagWhenNoDomainsAreProvided()
+    {
+        $provider = self::createProvider(
+            new MockHttpClient(function (): ResponseInterface {
+                $this->fail('No HTTP request should be made when no domains are provided.');
+            }, 'https://localise.biz/api/'),
+            $this->getLoader(),
+            $this->getLogger(),
+            $this->getDefaultLocale(),
+            'localise.biz/api/',
+        );
+
+        $this->assertSame([], $provider->read([], ['en'])->getCatalogues());
+    }
+
     public function testReadForAllDomains()
     {
         $this->loader = $this->createMock(LoaderInterface::class);

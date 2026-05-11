@@ -24,6 +24,12 @@ interface ProviderInterface extends \Stringable
      */
     public function write(TranslatorBagInterface $translatorBag): void;
 
+    /**
+     * Returns translations from the provider for the given $domains and $locales.
+     *
+     * If $domains is empty, an empty TranslatorBag is returned: callers that want
+     * every available domain must pass them explicitly.
+     */
     public function read(array $domains, array $locales): TranslatorBag;
 
     public function delete(TranslatorBagInterface $translatorBag): void;
