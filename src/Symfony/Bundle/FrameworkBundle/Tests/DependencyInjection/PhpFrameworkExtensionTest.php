@@ -14,12 +14,15 @@ namespace Symfony\Bundle\FrameworkBundle\Tests\DependencyInjection;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\IgnoreDeprecations;
+use Symfony\Component\Cache\DependencyInjection\CachePoolPass;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Exception\LogicException;
 use Symfony\Component\DependencyInjection\Exception\OutOfBoundsException;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
+use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\Messenger\Tests\Fixtures\DummyMessage;
 use Symfony\Component\RateLimiter\CompoundRateLimiterFactory;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
@@ -455,6 +458,46 @@ class PhpFrameworkExtensionTest extends FrameworkExtensionTestCase
 
         $this->assertTrue($container->hasDefinition('message_bus'));
         $this->assertSame('message_bus', (string) $container->getAlias('messenger.default_bus'));
+    }
+
+    public function testCacheAppAndSystemAcceptDsn()
+    {
+        $container = $this->createContainerFromFile('cache_app_dsn', [], true, false);
+        $container->setParameter('cache.prefix.seed', 'test');
+        $container->addCompilerPass(new CachePoolPass());
+        $container->compile();
+
+        $appPool = $container->getDefinition('cache.app');
+        $this->assertSame('cache.adapter.redis', $appPool->getParent());
+
+        $appProvider = $appPool->getArgument(0);
+        $this->assertInstanceOf(Reference::class, $appProvider);
+        $appProviderId = (string) $appProvider;
+        $this->assertStringStartsWith('.cache_connection.', $appProviderId);
+        $this->assertSame('redis://example.com:6380', $container->getDefinition($appProviderId)->getArgument(0));
+
+        $systemPool = $container->getDefinition('cache.system');
+        $this->assertSame('cache.adapter.memcached', $systemPool->getParent());
+
+        $systemProvider = $systemPool->getArgument(0);
+        $this->assertInstanceOf(Reference::class, $systemProvider);
+        $systemProviderId = (string) $systemProvider;
+        $this->assertStringStartsWith('.cache_connection.', $systemProviderId);
+        $this->assertSame('memcached://example.com:11211', $container->getDefinition($systemProviderId)->getArgument(0));
+    }
+
+    public function testCacheAppRejectsUnsupportedDsnScheme()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unsupported scheme "ftp" in "framework.cache.app" DSN');
+
+        $this->createContainerFromClosure(static function ($container) {
+            $container->loadFromExtension('framework', [
+                'cache' => [
+                    'app' => 'ftp://example.com',
+                ],
+            ]);
+        });
     }
 }
 

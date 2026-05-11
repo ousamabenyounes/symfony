@@ -228,6 +228,21 @@ use Symfony\Contracts\Translation\LocaleAwareInterface;
  */
 class FrameworkExtension extends Extension
 {
+    private const CACHE_DSN_SCHEME_REGEX = '#^([a-z][a-z0-9+\-.]*+)://#';
+
+    private const CACHE_DSN_SCHEME_TO_ADAPTER = [
+        'redis' => 'cache.adapter.redis',
+        'rediss' => 'cache.adapter.redis',
+        'valkey' => 'cache.adapter.valkey',
+        'valkeys' => 'cache.adapter.valkey',
+        'memcached' => 'cache.adapter.memcached',
+        'mysql' => 'cache.adapter.pdo',
+        'pgsql' => 'cache.adapter.pdo',
+        'sqlite' => 'cache.adapter.pdo',
+        'sqlsrv' => 'cache.adapter.pdo',
+        'oci' => 'cache.adapter.pdo',
+    ];
+
     private array $configsEnabled = [];
 
     /**
@@ -2661,11 +2676,25 @@ class FrameworkExtension extends Extension
             }
         }
         foreach (['app', 'system'] as $name) {
-            $config['pools']['cache.'.$name] = [
+            $pool = [
                 'adapters' => [$config[$name]],
                 'public' => true,
                 'tags' => false,
             ];
+
+            if (preg_match(self::CACHE_DSN_SCHEME_REGEX, (string) $config[$name], $m)) {
+                $scheme = $m[1];
+                $adapter = self::CACHE_DSN_SCHEME_TO_ADAPTER[$scheme] ?? null;
+
+                if (null === $adapter) {
+                    throw new InvalidArgumentException(\sprintf('Unsupported scheme "%s" in "framework.cache.%s" DSN; supported schemes are: "%s".', $scheme, $name, implode('", "', array_keys(self::CACHE_DSN_SCHEME_TO_ADAPTER))));
+                }
+
+                $pool['adapters'] = [$adapter];
+                $pool['provider'] = $config[$name];
+            }
+
+            $config['pools']['cache.'.$name] = $pool;
         }
         $redisTagAwareAdapters = [['cache.adapter.redis_tag_aware'], ['cache.adapter.valkey_tag_aware']];
         foreach ($config['pools'] as $name => $pool) {
