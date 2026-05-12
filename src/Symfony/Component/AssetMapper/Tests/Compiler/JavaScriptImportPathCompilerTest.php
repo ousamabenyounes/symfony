@@ -667,6 +667,12 @@ class JavaScriptImportPathCompilerTest extends TestCase
             'input' => "import 'https://example.com/styles.css';",
             'expectedExceptionMessage' => null,
         ];
+
+        yield 'importing_a_missing_bare_css_file_with_uppercase_extension_throws_exception' => [
+            'sourceLogicalName' => 'app.js',
+            'input' => "import 'some-package/styles.CSS';",
+            'expectedExceptionMessage' => 'Unable to find asset "some-package/styles.CSS" imported from "/path/to/app.js". Add it to "importmap.php", e.g. via the "importmap:require" command.',
+        ];
     }
 
     public function testErrorMessageAvoidsCircularException()

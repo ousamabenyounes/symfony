@@ -95,7 +95,7 @@ final class JavaScriptImportPathCompiler implements AssetCompilerInterface
                 // CSS bare import will silently do nothing, so warn the user at compile time.
                 if (!$isRelativeImport
                     && !$asset->isVendor
-                    && str_ends_with($importedModule, '.css')
+                    && preg_match('/\.css$/i', $importedModule)
                     && !str_contains($importedModule, '://')
                 ) {
                     $this->handleMissingImport(\sprintf('Unable to find asset "%s" imported from "%s". Add it to "importmap.php", e.g. via the "importmap:require" command.', $importedModule, $asset->sourcePath));
