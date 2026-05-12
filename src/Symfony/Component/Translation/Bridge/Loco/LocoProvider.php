@@ -96,11 +96,8 @@ final class LocoProvider implements ProviderInterface
 
     public function read(array $domains, array $locales): TranslatorBag
     {
+        $domains = $domains ?: ['*'];
         $translatorBag = new TranslatorBag();
-
-        if (!$domains) {
-            return $translatorBag;
-        }
 
         foreach ($locales as $locale) {
             foreach ($domains as $domain) {
