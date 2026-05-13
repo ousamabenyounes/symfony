@@ -204,6 +204,31 @@ class JavaScriptImportPathCompilerTest extends TestCase
             ],
         ];
 
+        yield 'static_export_star_from' => [
+            'input' => "export * from './other.js';",
+            'expectedJavaScriptImports' => ['/assets/other.js' => ['lazy' => false, 'asset' => 'other.js', 'add' => true]],
+        ];
+
+        yield 'static_export_named_from' => [
+            'input' => "export { myFunction } from './other.js';",
+            'expectedJavaScriptImports' => ['/assets/other.js' => ['lazy' => false, 'asset' => 'other.js', 'add' => true]],
+        ];
+
+        yield 'static_export_multiple_named_from' => [
+            'input' => "export { myFunction, myOtherFunction } from './other.js';",
+            'expectedJavaScriptImports' => ['/assets/other.js' => ['lazy' => false, 'asset' => 'other.js', 'add' => true]],
+        ];
+
+        yield 'static_export_star_as_namespace_from' => [
+            'input' => "export * as myModule from './other.js';",
+            'expectedJavaScriptImports' => ['/assets/other.js' => ['lazy' => false, 'asset' => 'other.js', 'add' => true]],
+        ];
+
+        yield 'export_const_without_from_is_ignored' => [
+            'input' => "export const foo = 1;\nexport { bar } from './other.js';",
+            'expectedJavaScriptImports' => ['/assets/other.js' => ['lazy' => false, 'asset' => 'other.js', 'add' => true]],
+        ];
+
         yield 'extra_import_word_does_not_cause_issues' => [
             'input' => "// about to do an import\nimport('./other.js');",
             'expectedJavaScriptImports' => ['/assets/other.js' => ['lazy' => true, 'asset' => 'other.js', 'add' => true]],

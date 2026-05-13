@@ -46,6 +46,10 @@ final class JavaScriptImportPathCompiler implements AssetCompilerInterface
                         \s*from\s*
                     )?
             |
+                export\s+
+                    (?:\*(?:\s*as\s+\w+)?|[\w\s{},*]+)
+                    \s*from\s*
+            |
                 \bimport\(
             )
             \s*[\'"`](\.\/[^\'"`\n]++|(\.\.\/)*+[^\'"`\n]++)[\'"`]\s*[;\)]
