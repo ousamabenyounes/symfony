@@ -341,6 +341,26 @@ class RouterTest extends TestCase
         $router->getRouteCollection();
     }
 
+    public function testIndirectResolvedEnvPlaceholders()
+    {
+        $routes = new RouteCollection();
+
+        $route = new Route('/');
+        $route->setHost('%route.host.app%');
+        $routes->add('foo', $route);
+
+        $router = new Router($container = $this->getServiceContainer($routes), 'foo');
+        // Simulates the state of a parameter compiled through EnvPlaceholderParameterBag:
+        // the "%env(resolve:ROUTE_HOST_APP)%" expression has already been substituted
+        // by an env placeholder string in the frozen parameter bag.
+        $container->setParameter('route.host.app', 'env_0123456789abcdef_resolve_ROUTE_HOST_APP_0123456789abcdef0123456789abcdef');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Using env parameters in routing configuration is not allowed: the "%route.host.app%" parameter resolves to an env variable.');
+
+        $router->getRouteCollection();
+    }
+
     public function testHostPlaceholders()
     {
         $routes = new RouteCollection();

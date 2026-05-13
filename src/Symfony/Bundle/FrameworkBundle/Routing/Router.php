@@ -178,6 +178,10 @@ class Router extends BaseRouter implements WarmableInterface, ServiceSubscriberI
                 }
 
                 if (\is_scalar($resolved)) {
+                    if (\is_string($resolved) && preg_match('/env_[0-9a-f]{16}_\w+_[0-9a-f]{32}/', $resolved)) {
+                        throw new RuntimeException(\sprintf('Using env parameters in routing configuration is not allowed: the "%%%s%%" parameter resolves to an env variable.', $match[1]));
+                    }
+
                     return false === $resolved ? '0' : (string) $resolved;
                 }
             }
