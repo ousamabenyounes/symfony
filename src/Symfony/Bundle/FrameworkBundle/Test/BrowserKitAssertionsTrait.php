@@ -31,31 +31,46 @@ use Symfony\Component\HttpFoundation\Test\Constraint as ResponseConstraint;
  */
 trait BrowserKitAssertionsTrait
 {
-    private static bool $defaultVerboseMode = true;
+    /**
+     * When null, the trait falls back to the SYMFONY_BROWSERKIT_ASSERTIONS_VERBOSE
+     * env var, then to verbose=true. Set explicitly via setBrowserKitAssertionsAsVerbose().
+     */
+    private static ?bool $defaultVerboseMode = null;
 
     public static function setBrowserKitAssertionsAsVerbose(bool $verbose): void
     {
         self::$defaultVerboseMode = $verbose;
     }
 
+    private static function getDefaultVerboseMode(): bool
+    {
+        if (null !== self::$defaultVerboseMode) {
+            return self::$defaultVerboseMode;
+        }
+
+        $env = $_SERVER['SYMFONY_BROWSERKIT_ASSERTIONS_VERBOSE'] ?? $_ENV['SYMFONY_BROWSERKIT_ASSERTIONS_VERBOSE'] ?? null;
+
+        return null !== $env ? filter_var($env, \FILTER_VALIDATE_BOOLEAN) : true;
+    }
+
     public static function assertResponseIsSuccessful(string $message = '', ?bool $verbose = null): void
     {
-        self::assertThatForResponse(new ResponseConstraint\ResponseIsSuccessful($verbose ?? self::$defaultVerboseMode), $message);
+        self::assertThatForResponse(new ResponseConstraint\ResponseIsSuccessful($verbose ?? self::getDefaultVerboseMode()), $message);
     }
 
     public static function assertResponseStatusCodeSame(int $expectedCode, string $message = '', ?bool $verbose = null): void
     {
-        self::assertThatForResponse(new ResponseConstraint\ResponseStatusCodeSame($expectedCode, $verbose ?? self::$defaultVerboseMode), $message);
+        self::assertThatForResponse(new ResponseConstraint\ResponseStatusCodeSame($expectedCode, $verbose ?? self::getDefaultVerboseMode()), $message);
     }
 
     public static function assertResponseFormatSame(?string $expectedFormat, string $message = '', ?bool $verbose = null): void
     {
-        self::assertThatForResponse(new ResponseConstraint\ResponseFormatSame(self::getRequest(), $expectedFormat, $verbose ?? self::$defaultVerboseMode), $message);
+        self::assertThatForResponse(new ResponseConstraint\ResponseFormatSame(self::getRequest(), $expectedFormat, $verbose ?? self::getDefaultVerboseMode()), $message);
     }
 
     public static function assertResponseRedirects(?string $expectedLocation = null, ?int $expectedCode = null, string $message = '', ?bool $verbose = null): void
     {
-        $constraint = new ResponseConstraint\ResponseIsRedirected($verbose ?? self::$defaultVerboseMode);
+        $constraint = new ResponseConstraint\ResponseIsRedirected($verbose ?? self::getDefaultVerboseMode());
         if ($expectedLocation) {
             $locationConstraint = new ResponseConstraint\ResponseHeaderLocationSame(self::getRequest(), $expectedLocation);
 
@@ -108,7 +123,7 @@ trait BrowserKitAssertionsTrait
 
     public static function assertResponseIsUnprocessable(string $message = '', ?bool $verbose = null): void
     {
-        self::assertThatForResponse(new ResponseConstraint\ResponseIsUnprocessable($verbose ?? self::$defaultVerboseMode), $message);
+        self::assertThatForResponse(new ResponseConstraint\ResponseIsUnprocessable($verbose ?? self::getDefaultVerboseMode()), $message);
     }
 
     public static function assertBrowserHasCookie(string $name, string $path = '/', ?string $domain = null, string $message = ''): void

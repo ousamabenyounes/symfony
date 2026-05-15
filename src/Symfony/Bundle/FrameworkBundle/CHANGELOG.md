@@ -4,6 +4,7 @@ CHANGELOG
 8.1
 ---
 
+ * Honor the `SYMFONY_BROWSERKIT_ASSERTIONS_VERBOSE` env var as the default for response-body inclusion in `BrowserKitAssertionsTrait` failure messages (set in `phpunit.xml`; `setBrowserKitAssertionsAsVerbose()` still wins)
  * Deprecate `json_streamer.value_transformer.date_time_to_string` and `json_streamer.value_transformer.string_to_date_time` services, date times are handled as value objects
  * Deprecate `json_streamer.value_transformer` tag, use `json_streamer.property_value_transformer` instead
  * Add `marshaller` option to cache pool configuration to allow per-pool marshaller services
