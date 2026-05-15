@@ -59,11 +59,11 @@ class Workflow implements WorkflowInterface
      *                                              Setting this to an empty array `[]` means no events are dispatched (except the {@see GuardEvent}).
      *                                              Passing an array with WorkflowEvents will allow only those events to be dispatched plus
      *                                              the {@see GuardEvent}.
-     * @param string[]            $disabledEvents   A blacklist of {@see WorkflowEvents} constants that are never dispatched, even when listed
-     *                                              in $eventsToDispatch or {@see WorkflowEvents::GUARD}. Useful to permanently silence a single
-     *                                              event (typically {@see WorkflowEvents::ANNOUNCE}) without having to enumerate every other
-     *                                              event in $eventsToDispatch — which would otherwise need an update whenever Symfony adds a
-     *                                              new event.
+     * @param string[]            $disabledEvents   A blacklist of {@see WorkflowEvents} constants that are never dispatched, regardless of
+     *                                              $eventsToDispatch. Applies to {@see WorkflowEvents::GUARD} too (which $eventsToDispatch
+     *                                              does not cover). Useful to permanently silence a single event (typically {@see
+     *                                              WorkflowEvents::ANNOUNCE}) without having to enumerate every other event in
+     *                                              $eventsToDispatch — which would otherwise need an update whenever Symfony adds a new event.
      */
     public function __construct(
         private Definition $definition,
@@ -303,7 +303,7 @@ class Workflow implements WorkflowInterface
 
         $event = $this->guardTransition($subject, $marking, $transition);
 
-        if ($event->isBlocked()) {
+        if (null !== $event && $event->isBlocked()) {
             return $event->getTransitionBlockerList();
         }
 
@@ -312,7 +312,7 @@ class Workflow implements WorkflowInterface
 
     private function guardTransition(object $subject, Marking $marking, Transition $transition): ?GuardEvent
     {
-        if (null === $this->dispatcher) {
+        if (null === $this->dispatcher || \in_array(WorkflowEvents::GUARD, $this->disabledEvents, true)) {
             return null;
         }
 
