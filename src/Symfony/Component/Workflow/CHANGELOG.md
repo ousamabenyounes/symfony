@@ -5,6 +5,7 @@ CHANGELOG
 ---
 
  * Add support for dumping listeners in Graphviz diagrams
+ * Add `$disabledEvents` constructor argument to `Workflow` and `StateMachine` to permanently silence events at the workflow level (e.g. `workflow.announce`) without enumerating every other event in `$eventsToDispatch`
 
 8.0
 ---

@@ -26,6 +26,7 @@ return static function (ContainerConfigurator $container) {
                 service('event_dispatcher')->ignoreOnInvalid(),
                 abstract_arg('workflow name'),
                 abstract_arg('events to dispatch'),
+                abstract_arg('disabled events'),
             ])
             ->abstract()
         ->set('state_machine.abstract', StateMachine::class)
@@ -35,6 +36,7 @@ return static function (ContainerConfigurator $container) {
                 service('event_dispatcher')->ignoreOnInvalid(),
                 abstract_arg('workflow name'),
                 abstract_arg('events to dispatch'),
+                abstract_arg('disabled events'),
             ])
             ->abstract()
         ->set('workflow.marking_store.method', MethodMarkingStore::class)

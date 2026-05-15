@@ -1112,6 +1112,7 @@ class FrameworkExtension extends Extension
             $workflowDefinition->replaceArgument(1, $markingStoreDefinition);
             $workflowDefinition->replaceArgument(3, $name);
             $workflowDefinition->replaceArgument(4, $workflow['events_to_dispatch']);
+            $workflowDefinition->replaceArgument(5, $workflow['disabled_events']);
 
             $workflowDefinition->addTag('workflow', [
                 'name' => $name,

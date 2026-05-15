@@ -59,6 +59,11 @@ class Workflow implements WorkflowInterface
      *                                              Setting this to an empty array `[]` means no events are dispatched (except the {@see GuardEvent}).
      *                                              Passing an array with WorkflowEvents will allow only those events to be dispatched plus
      *                                              the {@see GuardEvent}.
+     * @param string[]            $disabledEvents   A blacklist of {@see WorkflowEvents} constants that are never dispatched, even when listed
+     *                                              in $eventsToDispatch or {@see WorkflowEvents::GUARD}. Useful to permanently silence a single
+     *                                              event (typically {@see WorkflowEvents::ANNOUNCE}) without having to enumerate every other
+     *                                              event in $eventsToDispatch — which would otherwise need an update whenever Symfony adds a
+     *                                              new event.
      */
     public function __construct(
         private Definition $definition,
@@ -66,6 +71,7 @@ class Workflow implements WorkflowInterface
         private ?EventDispatcherInterface $dispatcher = null,
         private string $name = 'unnamed',
         private ?array $eventsToDispatch = null,
+        private array $disabledEvents = [],
     ) {
         $this->markingStore = $markingStore ?? new MethodMarkingStore();
     }
@@ -428,6 +434,10 @@ class Workflow implements WorkflowInterface
     private function shouldDispatchEvent(string $eventName, array $context): bool
     {
         if (null === $this->dispatcher) {
+            return false;
+        }
+
+        if (\in_array($eventName, $this->disabledEvents, true)) {
             return false;
         }
 

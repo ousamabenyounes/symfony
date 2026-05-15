@@ -4,6 +4,7 @@ CHANGELOG
 8.1
 ---
 
+ * Add `framework.workflows.<name>.disabled_events` configuration to permanently silence events at the workflow level (e.g. `workflow.announce`) without listing every other event in `events_to_dispatch`
  * Deprecate `json_streamer.value_transformer.date_time_to_string` and `json_streamer.value_transformer.string_to_date_time` services, date times are handled as value objects
  * Deprecate `json_streamer.value_transformer` tag, use `json_streamer.property_value_transformer` instead
  * Add `marshaller` option to cache pool configuration to allow per-pool marshaller services

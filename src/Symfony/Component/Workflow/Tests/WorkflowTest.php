@@ -511,6 +511,36 @@ class WorkflowTest extends TestCase
         $this->assertSame($eventNameExpected, $eventDispatcher->dispatchedEvents);
     }
 
+    public function testApplyDoesNotDispatchDisabledEventsForEveryApplyCall()
+    {
+        $definition = $this->createComplexWorkflowDefinition();
+        $subject = new Subject();
+        $eventDispatcher = new EventDispatcherMock();
+        $workflow = new Workflow($definition, new MethodMarkingStore(), $eventDispatcher, 'workflow_name', null, [WorkflowEvents::ANNOUNCE]);
+
+        $workflow->apply($subject, 't1');
+
+        foreach ($eventDispatcher->dispatchedEvents as $event) {
+            $this->assertStringNotContainsString('announce', $event, \sprintf('Announce event "%s" must not be dispatched when listed in $disabledEvents.', $event));
+        }
+    }
+
+    public function testDisabledEventsBlacklistWinsOverEventsToDispatchWhitelist()
+    {
+        $transitions[] = new Transition('a-b', 'a', 'b');
+        $definition = new Definition(['a', 'b'], $transitions);
+
+        $subject = new Subject();
+        $eventDispatcher = new EventDispatcherMock();
+        // The whitelist allows ANNOUNCE; the blacklist must still suppress it.
+        $workflow = new Workflow($definition, new MethodMarkingStore(), $eventDispatcher, 'workflow_name', [WorkflowEvents::ANNOUNCE, WorkflowEvents::COMPLETED], [WorkflowEvents::ANNOUNCE]);
+
+        $workflow->apply($subject, 'a-b');
+
+        $this->assertContains('workflow.completed', $eventDispatcher->dispatchedEvents);
+        $this->assertNotContains('workflow.announce', $eventDispatcher->dispatchedEvents);
+    }
+
     public function testApplyOnlyDispatchesEventsThatHaveBeenSpecifiedByDefinition()
     {
         $transitions[] = new Transition('a-b', 'a', 'b');

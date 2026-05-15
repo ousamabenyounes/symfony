@@ -508,6 +508,28 @@ class Configuration implements ConfigurationInterface
                                         ->info('Select which Transition events should be dispatched for this Workflow.')
                                         ->example(['workflow.enter', 'workflow.transition'])
                                     ->end()
+                                    ->arrayNode('disabled_events', 'disabled_event')
+                                        ->defaultValue([])
+                                        ->stringPrototype()->end()
+                                        ->validate()
+                                            ->ifTrue(static function ($v) {
+                                                if (!class_exists(WorkflowEvents::class)) {
+                                                    return false;
+                                                }
+
+                                                foreach ($v as $value) {
+                                                    if (!\in_array($value, WorkflowEvents::ALIASES, true)) {
+                                                        return true;
+                                                    }
+                                                }
+
+                                                return false;
+                                            })
+                                            ->thenInvalid('The value must be an array of workflow events (like ["workflow.announce"]).')
+                                        ->end()
+                                        ->info('A blacklist of events that are never dispatched for this Workflow, even when listed in "events_to_dispatch". Useful to silence a single event (typically "workflow.announce") without having to enumerate every other event.')
+                                        ->example(['workflow.announce'])
+                                    ->end()
                                     ->arrayNode('places', 'place')
                                         ->beforeNormalization()
                                             ->ifString()
