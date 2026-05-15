@@ -70,14 +70,15 @@ trait BrowserKitAssertionsTrait
 
     public static function assertResponseRedirects(?string $expectedLocation = null, ?int $expectedCode = null, string $message = '', ?bool $verbose = null): void
     {
-        $constraint = new ResponseConstraint\ResponseIsRedirected($verbose ?? self::getDefaultVerboseMode());
+        $resolvedVerbose = $verbose ?? self::getDefaultVerboseMode();
+        $constraint = new ResponseConstraint\ResponseIsRedirected($resolvedVerbose);
         if ($expectedLocation) {
             $locationConstraint = new ResponseConstraint\ResponseHeaderLocationSame(self::getRequest(), $expectedLocation);
 
             $constraint = LogicalAnd::fromConstraints($constraint, $locationConstraint);
         }
         if ($expectedCode) {
-            $constraint = LogicalAnd::fromConstraints($constraint, new ResponseConstraint\ResponseStatusCodeSame($expectedCode));
+            $constraint = LogicalAnd::fromConstraints($constraint, new ResponseConstraint\ResponseStatusCodeSame($expectedCode, $resolvedVerbose));
         }
 
         self::assertThatForResponse($constraint, $message);
