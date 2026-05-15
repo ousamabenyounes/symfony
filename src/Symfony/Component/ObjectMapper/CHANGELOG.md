@@ -11,6 +11,7 @@ CHANGELOG
  * Add `SourceClass`, `ClassRule`, and `ClassRuleList` condition callables to match mapping rules based on source/target class
  * Allow `TargetClass` and `SourceClass` to accept arrays of class FQDNs
  * Add `IsNotNull` built-in condition to skip mapping when a source property value is null
+ * Add `MappingAwareTransformCallableInterface` to give transformers access to the current `Map` metadata
 
 7.4
 ---

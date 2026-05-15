@@ -72,6 +72,9 @@ use Symfony\Component\ObjectMapper\Tests\Fixtures\IsNotNullCondition\IsNotNullSo
 use Symfony\Component\ObjectMapper\Tests\Fixtures\IsNotNullCondition\IsNotNullTarget;
 use Symfony\Component\ObjectMapper\Tests\Fixtures\IsNotNullCondition\IsNotNullTargetMapping;
 use Symfony\Component\ObjectMapper\Tests\Fixtures\LazyFoo;
+use Symfony\Component\ObjectMapper\Tests\Fixtures\MappingAware\A as MappingAwareA;
+use Symfony\Component\ObjectMapper\Tests\Fixtures\MappingAware\B as MappingAwareB;
+use Symfony\Component\ObjectMapper\Tests\Fixtures\MappingAware\MappingAwareTransformer;
 use Symfony\Component\ObjectMapper\Tests\Fixtures\MapStruct\AToBMapper;
 use Symfony\Component\ObjectMapper\Tests\Fixtures\MapStruct\MapStructMapperMetadataFactory;
 use Symfony\Component\ObjectMapper\Tests\Fixtures\MapStruct\Source;
@@ -602,6 +605,17 @@ final class ObjectMapperTest extends TestCase
 
         $b = $myMapper->map($a);
         $this->assertSame('got decorated', $b->relation->baz);
+    }
+
+    public function testMappingAwareTransformCallable()
+    {
+        $mapper = new ObjectMapper(
+            transformCallableLocator: $this->getServiceLocator([MappingAwareTransformer::class => new MappingAwareTransformer()]),
+        );
+        $b = $mapper->map(new MappingAwareA());
+
+        $this->assertInstanceOf(MappingAwareB::class, $b);
+        $this->assertSame('bar', $b->bar);
     }
 
     #[DataProvider('validPartialInputProvider')]
