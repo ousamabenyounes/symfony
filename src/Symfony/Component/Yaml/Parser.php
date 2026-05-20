@@ -28,6 +28,7 @@ class Parser
     public const REFERENCE_PATTERN = '#^&(?P<ref>[^ ]++) *+(?P<value>.*)#u';
     public const DEFAULT_MAX_NESTING_LEVEL = 128;
     public const DEFAULT_MAX_ALIASES_FOR_COLLECTIONS = 128;
+    public const MAX_ALIASES_FOR_COLLECTIONS_ENV_VAR = 'SYMFONY_YAML_MAX_ALIASES_FOR_COLLECTIONS';
 
     private ?string $filename = null;
     private int $offset = 0;
@@ -48,12 +49,35 @@ class Parser
             throw new \InvalidArgumentException('The maximum nesting depth must be greater than 0.');
         }
 
+        if (self::DEFAULT_MAX_ALIASES_FOR_COLLECTIONS === $maxAliasesForCollections) {
+            $maxAliasesForCollections = self::resolveMaxAliasesFromEnv($maxAliasesForCollections);
+        }
+
         if ($maxAliasesForCollections < 0) {
             throw new \InvalidArgumentException('The maximum number of collection aliases must be greater than or equal to 0.');
         }
 
         $this->getState()->maxNestingLevel = $maxNestingLevel;
         $this->getState()->maxAliasesForCollections = $maxAliasesForCollections;
+    }
+
+    private static function resolveMaxAliasesFromEnv(int $default): int
+    {
+        $raw = $_SERVER[self::MAX_ALIASES_FOR_COLLECTIONS_ENV_VAR]
+            ?? $_ENV[self::MAX_ALIASES_FOR_COLLECTIONS_ENV_VAR]
+            ?? getenv(self::MAX_ALIASES_FOR_COLLECTIONS_ENV_VAR);
+
+        if (false === $raw || '' === $raw) {
+            return $default;
+        }
+
+        $value = filter_var($raw, \FILTER_VALIDATE_INT);
+
+        if (false === $value || $value < 0) {
+            throw new \InvalidArgumentException(\sprintf('Invalid value for env var "%s": expected a non-negative integer, got "%s".', self::MAX_ALIASES_FOR_COLLECTIONS_ENV_VAR, $raw));
+        }
+
+        return $value;
     }
 
     /**

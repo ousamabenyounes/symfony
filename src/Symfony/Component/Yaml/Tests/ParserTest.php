@@ -3350,6 +3350,63 @@ YAML;
         $this->assertSame(['foo' => 'bar'], $this->parser->parse($yaml));
     }
 
+    public function testParseReadsMaxAliasesForCollectionsFromEnvVar()
+    {
+        $envVar = 'SYMFONY_YAML_MAX_ALIASES_FOR_COLLECTIONS';
+        $previous = getenv($envVar);
+        putenv($envVar.'=300');
+
+        try {
+            $yaml = "defaults: &defaults [foo, bar]\nitems:\n";
+            for ($i = 0; $i < 200; ++$i) {
+                $yaml .= "  c$i: *defaults\n";
+            }
+
+            $result = (new Parser())->parse($yaml);
+
+            $this->assertCount(200, $result['items']);
+        } finally {
+            false === $previous ? putenv($envVar) : putenv($envVar.'='.$previous);
+        }
+    }
+
+    public function testParseRejectsInvalidMaxAliasesForCollectionsEnvVar()
+    {
+        $envVar = 'SYMFONY_YAML_MAX_ALIASES_FOR_COLLECTIONS';
+        $previous = getenv($envVar);
+        putenv($envVar.'=not-an-int');
+
+        try {
+            $this->expectException(\InvalidArgumentException::class);
+            $this->expectExceptionMessage('SYMFONY_YAML_MAX_ALIASES_FOR_COLLECTIONS');
+
+            new Parser();
+        } finally {
+            false === $previous ? putenv($envVar) : putenv($envVar.'='.$previous);
+        }
+    }
+
+    public function testParseIgnoresMaxAliasesForCollectionsEnvVarWhenExplicitArgIsPassed()
+    {
+        $envVar = 'SYMFONY_YAML_MAX_ALIASES_FOR_COLLECTIONS';
+        $previous = getenv($envVar);
+        putenv($envVar.'=1000');
+
+        try {
+            $this->expectException(ParseException::class);
+            $this->expectExceptionMessage('Maximum number of collection aliases');
+
+            $yaml = "defaults: &defaults [foo]\nitems:\n";
+            for ($i = 0; $i < 10; ++$i) {
+                $yaml .= "  c$i: *defaults\n";
+            }
+
+            (new Parser(Parser::DEFAULT_MAX_NESTING_LEVEL, 5))->parse($yaml);
+        } finally {
+            false === $previous ? putenv($envVar) : putenv($envVar.'='.$previous);
+        }
+    }
+
     private function assertSameData($expected, $actual)
     {
         $this->assertEquals($expected, $actual);
