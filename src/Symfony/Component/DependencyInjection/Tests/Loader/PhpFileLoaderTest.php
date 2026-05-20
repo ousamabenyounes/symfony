@@ -150,6 +150,7 @@ class PhpFileLoaderTest extends TestCase
         yield ['env_param'];
         yield ['array_config'];
         yield ['array_config_tagged_iterator'];
+        yield ['array_config_service_factory'];
         yield ['object_array_config'];
         yield ['return_when_env'];
     }

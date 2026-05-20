@@ -1,0 +1,13 @@
+
+services:
+    service_container:
+        class: Symfony\Component\DependencyInjection\ContainerInterface
+        public: true
+        synthetic: true
+    Symfony\Component\DependencyInjection\Tests\Fixtures\InvokableFactory:
+        class: Symfony\Component\DependencyInjection\Tests\Fixtures\InvokableFactory
+        public: true
+    bar_from_invokable:
+        class: Symfony\Component\DependencyInjection\Tests\Fixtures\Bar
+        public: true
+        factory: ['@Symfony\Component\DependencyInjection\Tests\Fixtures\InvokableFactory', __invoke]

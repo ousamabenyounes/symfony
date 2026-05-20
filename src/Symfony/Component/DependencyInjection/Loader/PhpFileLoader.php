@@ -27,6 +27,7 @@ use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader\Configurator\App;
 use Symfony\Component\DependencyInjection\Loader\Configurator\AppReference;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ReferenceConfigurator;
 
 /**
  * PhpFileLoader loads service definitions from a PHP file.
@@ -113,7 +114,7 @@ class PhpFileLoader extends FileLoader
                     $loadContent->invoke($yamlLoader, [
                         'imports' => ContainerConfigurator::processValue($result['imports'] ?? []),
                         'parameters' => ContainerConfigurator::processValue($result['parameters'] ?? []),
-                        'services' => ContainerConfigurator::processValue($result['services'] ?? [], true),
+                        'services' => ContainerConfigurator::processValue($this->normalizeServicesCallables($result['services'] ?? []), true),
                     ], $path);
 
                     foreach ($result as $namespace => $config) {
@@ -140,7 +141,7 @@ class PhpFileLoader extends FileLoader
                         $loadContent->invoke($yamlLoader, [
                             'imports' => ContainerConfigurator::processValue($result[$when]['imports'] ?? []),
                             'parameters' => ContainerConfigurator::processValue($result[$when]['parameters'] ?? []),
-                            'services' => ContainerConfigurator::processValue($result[$when]['services'] ?? [], true),
+                            'services' => ContainerConfigurator::processValue($this->normalizeServicesCallables($result[$when]['services'] ?? []), true),
                         ], $path);
 
                         foreach ($result[$when] as $namespace => $config) {
@@ -164,6 +165,27 @@ class PhpFileLoader extends FileLoader
         }
 
         return null;
+    }
+
+    /**
+     * Normalizes ReferenceConfigurator instances stored as "factory" or "configurator"
+     * to their "@id" string form, before ContainerConfigurator::processValue() turns
+     * them into Reference objects that YamlFileLoader::parseCallable() rejects.
+     */
+    private function normalizeServicesCallables(array $services): array
+    {
+        foreach ($services as &$definition) {
+            if (!\is_array($definition)) {
+                continue;
+            }
+            foreach (['factory', 'configurator'] as $key) {
+                if (isset($definition[$key]) && $definition[$key] instanceof ReferenceConfigurator) {
+                    $definition[$key] = '@'.$definition[$key];
+                }
+            }
+        }
+
+        return $services;
     }
 
     public function supports(mixed $resource, ?string $type = null): bool
