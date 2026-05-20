@@ -20,8 +20,11 @@ use Symfony\Component\Scheduler\Trigger\StatefulTriggerInterface;
 
 final class MessageGenerator implements MessageGeneratorInterface
 {
+    private const HEAP_PROBE_OFFSET = '-1 microsecond';
+
     private ?Schedule $schedule = null;
     private TriggerHeap $triggerHeap;
+    private bool $heapInitialized = false;
     private ?\DateTimeImmutable $waitUntil;
 
     public function __construct(
@@ -56,7 +59,7 @@ final class MessageGenerator implements MessageGeneratorInterface
         $startTime = $checkpoint->from();
         $lastTime = $checkpoint->time();
         $lastIndex = $checkpoint->index();
-        $heap = $this->heap($lastTime, $startTime);
+        $heap = $this->heap($lastTime, $startTime, $lastIndex);
 
         while (!$heap->isEmpty() && $heap->top()[0] <= $now) {
             /** @var \DateTimeImmutable $time */
@@ -100,13 +103,23 @@ final class MessageGenerator implements MessageGeneratorInterface
         return $this->schedule ??= $this->scheduleProvider->getSchedule();
     }
 
-    private function heap(\DateTimeImmutable $time, \DateTimeImmutable $startTime): TriggerHeap
+    private function heap(\DateTimeImmutable $time, \DateTimeImmutable $startTime, int $lastIndex): TriggerHeap
     {
         if (isset($this->triggerHeap) && $this->triggerHeap->time <= $time) {
             return $this->triggerHeap;
         }
 
         $heap = new TriggerHeap($time);
+
+        // On the very first heap build of this instance — i.e. a new process picking up
+        // a checkpoint that already yielded part of the messages due at $time
+        // (lastIndex >= 0) — probe one microsecond before $time so triggers re-emit the
+        // entries due at exactly $time. The skip logic in getMessages() then filters out
+        // already-yielded indices, letting the un-processed remainder through. Subsequent
+        // rebuilds within the same instance (Schedule::setRestart) have already advanced
+        // past those entries and don't need the probe.
+        $probeTime = !$this->heapInitialized && $lastIndex >= 0 ? $time->modify(self::HEAP_PROBE_OFFSET) : $time;
+        $this->heapInitialized = true;
 
         foreach ($this->getSchedule()->getRecurringMessages() as $index => $recurringMessage) {
             $trigger = $recurringMessage->getTrigger();
@@ -115,7 +128,7 @@ final class MessageGenerator implements MessageGeneratorInterface
                 $trigger->continue($startTime);
             }
 
-            if (!$nextTime = $trigger->getNextRunDate($time)) {
+            if (!$nextTime = $trigger->getNextRunDate($probeTime)) {
                 continue;
             }
 
